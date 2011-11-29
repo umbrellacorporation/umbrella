@@ -46,7 +46,7 @@ module.exports = ->
 
 ```coffeescript
 # app/controllers/tweets.coffee
-Controller = require 'sugar_cube/controller'
+Controller = require 'umbrella/controller'
 Tweet = require 'models/tweet'
 
 

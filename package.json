@@ -1,10 +1,10 @@
 {
     "author": "Nicolae Claudius"
-  , "name": "tweet_express"
+  , "name": "umbrella"
   , "version": "0.0.1"
   , "repository": {
         "type": "git"
-      , "url": "git://github.com/clyfe/tweet_express.git"
+      , "url": "git://github.com/umbrellacorporation/umbrella.git"
     }
   , "main": "index"
   , "scripts": {

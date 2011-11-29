@@ -1,3 +1,3 @@
 
-module.exports = require './lib/sugar_cube'
+module.exports = require './lib/umbrella'
 
