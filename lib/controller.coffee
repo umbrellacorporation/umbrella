@@ -39,7 +39,7 @@ class Controller
   metaCode @, 'forward'
 
   # some sugar to access common methods faster
-  @forward 'req', 'param', 'flash'
+  @forward 'req', 'param', 'flash', 'session'
   @forward 'res', 'redirect', 'cookie', 'clearCookie', 'partial', 'download'
 
   # include before and after filters
@@ -51,8 +51,7 @@ class Controller
   # @api public
   @controllerName: -> 
     @_controllerName ?= @toString().match(/function ([^\(]+)/)[1].toLowerCase()
-  
-  
+
   # Default layout. This can be configured per controller
   #
   #     class Users extends Controller
@@ -62,8 +61,7 @@ class Controller
   #
   # @api public
   @layout: 'application'
-  
-  
+
   # Creates a context instance, populated with req, res, next
   #
   # @param {Object} req - the router-provided Express req object
@@ -71,18 +69,16 @@ class Controller
   # @next {Function} next - the in-router-provided next middleware, (error catcher etc.)
   # @api public
   constructor: (@req, @res, @next) ->
-  
+
     # copy needed properties, only functions can be forwarded
     @app = @req.app
-    @session = @req.session
     @post = @req.body
     @get = @req.query
-    
+
     # default layout, this can be changed at action level
     defaultViews = @res.app.set 'views'
     @layout = "#{defaultViews}/layouts/#{@constructor.layout}"
-  
-  
+
   # A smart way to handle errors. When the `@err` property is setted,
   # the error is automatically thrown
   #
@@ -92,8 +88,7 @@ class Controller
   # @param {Object} err - the error to be forwarded to next
   # @api public
   @::__defineSetter__ 'err', (err) -> throw err if err
-  
-  
+
   # Renders a template via Express's res#render, with the following additions:
   # * providing the locals to the current (controller instance) context
   # * searches for a template in ViewsRoot/ControllerName/* first, with fallbacks to ViewsRoot/ etc.
