@@ -39,7 +39,7 @@ class Controller
   metaCode @, 'forward'
 
   # some sugar to access common methods faster
-  @forward 'req', 'param', 'flash', 'session'
+  @forward 'req', 'param', 'flash'
   @forward 'res', 'redirect', 'cookie', 'clearCookie', 'partial', 'download'
 
   # include before and after filters
@@ -74,6 +74,7 @@ class Controller
     @app = @req.app
     @post = @req.body
     @get = @req.query
+    @session = @req.session
 
     # default layout, this can be changed at action level
     defaultViews = @res.app.set 'views'
