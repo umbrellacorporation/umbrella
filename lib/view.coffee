@@ -1,6 +1,5 @@
 coffeekup = require 'coffeekup'
 
-
 # Creates helper functions to be used in templates
 # 
 #     # helpers.coffee
@@ -17,4 +16,3 @@ coffeekup = require 'coffeekup'
 # @api public
 exports.helper = (fn) ->
   -> coffeekup.compile(fn)(@)
-

@@ -1,6 +1,6 @@
 metaCode = require 'meta_code'
 {View} = require 'express'
-
+Filters = require './filters'
 
 # A Set is an array with unique elements
 #
@@ -34,24 +34,24 @@ class Set extends Array
 # 
 # @api public
 class Controller
-  
-  
+
   # use forward metacode helpers
   metaCode @, 'forward'
-
 
   # some sugar to access common methods faster
   @forward 'req', 'param', 'flash'
   @forward 'res', 'redirect', 'cookie', 'clearCookie', 'partial', 'download'
-  
-  
+
+  # include before and after filters
+  metaCode @, 'module'
+  @extend Filters
+
   # A nifty introspection thingie to return the controller name
   #
   # @api public
   @controllerName: -> 
     @_controllerName ?= @toString().match(/function ([^\(]+)/)[1].toLowerCase()
-  
-  
+
   # Default layout. This can be configured per controller
   #
   #     class Users extends Controller
@@ -61,8 +61,7 @@ class Controller
   #
   # @api public
   @layout: 'application'
-  
-  
+
   # Creates a context instance, populated with req, res, next
   #
   # @param {Object} req - the router-provided Express req object
@@ -70,16 +69,17 @@ class Controller
   # @next {Function} next - the in-router-provided next middleware, (error catcher etc.)
   # @api public
   constructor: (@req, @res, @next) ->
-  
+
     # copy needed properties, only functions can be forwarded
     @app = @req.app
+    @post = @req.body
+    @get = @req.query
     @session = @req.session
-    
+
     # default layout, this can be changed at action level
     defaultViews = @res.app.set 'views'
     @layout = "#{defaultViews}/layouts/#{@constructor.layout}"
-  
-  
+
   # A smart way to handle errors. When the `@err` property is setted,
   # the error is automatically thrown
   #
@@ -89,8 +89,7 @@ class Controller
   # @param {Object} err - the error to be forwarded to next
   # @api public
   @::__defineSetter__ 'err', (err) -> throw err if err
-  
-  
+
   # Renders a template via Express's res#render, with the following additions:
   # * providing the locals to the current (controller instance) context
   # * searches for a template in ViewsRoot/ControllerName/* first, with fallbacks to ViewsRoot/ etc.
@@ -147,8 +146,30 @@ class Controller
     for k, v of action
       @actions.push k
       @::[k] = v
-  
-  
+
+  # Adnotation helper for filter definitions.
+  # Serves to differentiate between controller actions and filters
+  # Filters behave just like actions, but they are middleware
+  #
+  #     class Users extends Controller
+  #       @beforeFilter "checkLoggedIn"
+  #       @afterFilter "testAfter"
+  #
+  #       @action index: ->
+  #         User.find (@err, @users) => @render 'users/index'
+  #
+  #       @filter checkLoggedIn: ->
+  #         if @session.user?
+  #           @next() # pass to the index action
+  #         else
+  #           @redirect '/login' # redirect to login page, index action not called
+  #
+  # @param {Object} filter
+  # @api public
+  @filter: (filter) ->
+    for k, v of filter
+      @::[k] = v
+
   # Returns a Connect conforming callback function, that runs on the calling controller's instances.
   #
   #     class Users extends Controller
@@ -167,14 +188,24 @@ class Controller
   @middleware: (action) ->
     switch typeof action
       when 'function'
-        @wrapErrorsMiddleware (req, res, next) => action.call new @(req, res, next)
+        @wrapErrorsMiddleware (req, res, next) =>
+          action.call new @(req, res, next)
       when 'string'
         throw new Error("#{action} is not a controller action") unless action in @actions
-        @wrapErrorsMiddleware (req, res, next) => new @(req, res, next)[action]()
+        # TODO -> implement before filters here
+        @wrapErrorsMiddleware (req, res, next) =>
+          new @(req, res, next)[action]()
       else
         throw new Error("unknown action #{action}, only functions and strings represent valid actions")
-          
-          
+
+  # @param {Function} - the filter function
+  # @return {Function} - a Connect middleware
+  # @api public
+  @resolveFilter: (fn) ->
+    throw new Error("Filter must be a function") unless typeof(fn) is 'function'
+    @wrapErrorsMiddleware (req, res, next) =>
+      fn.call new @(req, res, next)
+
   # Extracts all the middlewares from this controller into a hash (js object)
   # Used as sugar paired with express-resources
   #
